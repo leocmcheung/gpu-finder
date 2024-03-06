@@ -248,11 +248,12 @@ def create_instance(compute, project, config, zone_list):
                         print("done.")
                         if 'error' in result:
                             error_results = result['error']['errors']
-                            if error_results[0]['code'] in ('QUOTA_EXCEEDED', 'ZONE_RESOURCE_POOL_EXHAUSTED_WITH_DETAILS'):
+                            # print(error_results)
+                            if error_results[0]['code'] in 'QUOTA_EXCEEDED':
                                 move_regions = 1
                                 print(Exception(result['error']))
                             else:
-                                raise Exception(result['error'])
+                                print('no GPU available in this region')
                         else:
                             instances += 1
                             move_regions = 0
@@ -340,9 +341,6 @@ def main(gpu_config, wait=True):
     if available_regions:
         print(f"Machine type {gpu_config['instance_config']['machine_type']} is available in the following regions: {available_regions}")
         instance_details = create_instance(compute, gpu_config["project_id"], gpu_config, accelerators)
-        if wait:
-            print("hit enter to delete instances")
-            input()
         delete_instance(compute, gpu_config["project_id"], instance_details)
     else:
         print(f"No regions available with the instance configuration {gpu_config['instance_config']['machine_type']} machine type and {gpu_config['instance_config']['gpu_type']} GPU type")
