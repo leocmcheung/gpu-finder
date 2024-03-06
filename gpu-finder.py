@@ -117,6 +117,7 @@ def create_instance(compute, project, config, zone_list):
     created_instances = []
     instances = 0
     regions_attempted = 0
+    possible_regions = []
     print(f"There are {len(regions_to_try)} regions to try that match the GPU type and machine type configuration.")
     for region in regions_to_try:
         print(f"Attempting to create instances in {region}")
@@ -252,6 +253,7 @@ def create_instance(compute, project, config, zone_list):
                             if error_results[0]['code'] in 'QUOTA_EXCEEDED':
                                 move_regions = 1
                                 print(Exception(result['error']))
+                                possible_regions.append(region) # will add region to output at the end as it may be limited by GPU quota
                             else:
                                 print('no GPU available in this region')
                         else:
@@ -264,6 +266,7 @@ def create_instance(compute, project, config, zone_list):
                                 "zone": zone_config['zone']
                             }
                             created_instances.append(instance_details)
+                            possible_regions.append(region) # add region as can create instance
                         break
                 if instances >= compute_config['number_of_instances']:
                     print(f"Reached the desired number of instances")
@@ -282,7 +285,7 @@ def create_instance(compute, project, config, zone_list):
         elif regions_attempted >= len(regions_to_try):
             print(f"All regions attempted, there are not enough resources to create the desired {compute_config['number_of_instances']} instances, {instances} created")
             break
-    return(created_instances)
+    return created_instances, possible_regions
     time.sleep(1)
 
 def delete_instance(compute, project, instance_details):
@@ -324,7 +327,7 @@ def create_instance_test(compute, project, config, zone, requested_gpus):
                     print(accelerator)
 
 
-def main(gpu_config, wait=True):
+def main(gpu_config):
     compute = googleapiclient.discovery.build('compute', 'v1')
     if gpu_config["instance_config"]["zone"]:
         print(f"Processing selected zones from {gpu_config['instance_config']['zone']}")
@@ -340,8 +343,9 @@ def main(gpu_config, wait=True):
     available_regions = list({v['region'] for v in available_zones})
     if available_regions:
         print(f"Machine type {gpu_config['instance_config']['machine_type']} is available in the following regions: {available_regions}")
-        instance_details = create_instance(compute, gpu_config["project_id"], gpu_config, accelerators)
+        instance_details, possible_regions = create_instance(compute, gpu_config["project_id"], gpu_config, accelerators)
         delete_instance(compute, gpu_config["project_id"], instance_details)
+        print(f'These are the possible regions that you should try: {possible_regions}')
     else:
         print(f"No regions available with the instance configuration {gpu_config['instance_config']['machine_type']} machine type and {gpu_config['instance_config']['gpu_type']} GPU type")
 
