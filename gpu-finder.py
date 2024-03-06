@@ -253,7 +253,7 @@ def create_instance(compute, project, config, zone_list):
                             if error_results[0]['code'] in 'QUOTA_EXCEEDED':
                                 move_regions = 1
                                 print(Exception(result['error']))
-                                possible_regions.append(region) # will add region to output at the end as it may be limited by GPU quota
+                                possible_regions.append(zone_config['zone']) # will add region to output at the end as it may be limited by GPU quota
                             else:
                                 print('no GPU available in this region')
                         else:
@@ -266,7 +266,7 @@ def create_instance(compute, project, config, zone_list):
                                 "zone": zone_config['zone']
                             }
                             created_instances.append(instance_details)
-                            possible_regions.append(region) # add region as can create instance
+                            possible_regions.append(zone_config['zone']) # add region as can create instance
                         break
                 if instances >= compute_config['number_of_instances']:
                     print(f"Reached the desired number of instances")
